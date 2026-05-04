@@ -1,0 +1,83 @@
+spring:
+  application:
+    name: user-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/userdb
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+  security:
+    user:
+      name: user
+      password: password
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8080/auth/jwks
+
+  cloud:
+    gateway:
+      enabled: false
+      routes:
+        - id: example_route
+          uri: http://example.com
+          predicates:
+            - Path=/example/**
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 5000
+            loggerLevel: basic
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: health, info, metrics, prometheus
+    endpoint:
+      health:
+        show-details: always
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.example: DEBUG
+    org.springframework.web: INFO
+    org.hibernate: WARN
