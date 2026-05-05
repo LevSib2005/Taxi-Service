@@ -8,8 +8,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Data
-@Table(name = "passengers")
-public class Passenger {
+@Table(name = "drivers")
+public class Driver {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -21,7 +21,15 @@ public class Passenger {
     private String email;
 
     private String phone;
+    private String licenseNumber;
+
+    @Enumerated(EnumType.STRING)
+    private DriverStatus status = DriverStatus.FREE;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    public enum DriverStatus{
+        FREE, BUSY, OFFLINE
+    }
 }
