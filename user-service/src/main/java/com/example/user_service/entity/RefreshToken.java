@@ -2,15 +2,14 @@ package com.example.user_service.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import org.apache.catalina.User;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Data
-@Table(name = "refresh_token")
-public class refreshToken {
+@Table(name = "refreshToken")
+public class RefreshToken {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
