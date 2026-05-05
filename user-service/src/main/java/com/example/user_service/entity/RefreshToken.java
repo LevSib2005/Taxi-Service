@@ -8,20 +8,27 @@ import java.time.LocalDateTime;
 
 @Entity
 @Data
-@Table(name = "passengers")
-public class Passenger {
+@Table(name = "refreshToken")
+public class RefreshToken {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 
-    private String name;
-
     @Column(unique = true)
-    private String email;
+    private String tokenHash;
 
-    private String phone;
+    private Long userId;
+
+    @Enumerated(EnumType.STRING)
+    private UserType userType;
+
+    private LocalDateTime expiresAt;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    public enum UserType{
+        PASSENGER, DRIVER
+    }
 }
