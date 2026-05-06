@@ -24,7 +24,7 @@ public class Driver {
     private String licenseNumber;
 
     @Enumerated(EnumType.STRING)
-    private DriverStatus status = DriverStatus.FREE;
+    private DriverStatus status = DriverStatus.OFFLINE;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
