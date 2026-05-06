@@ -18,6 +18,7 @@ repositories {
 }
 
 extra["springCloudVersion"] = "2025.0.2"
+extra["jjwtVersion"] = "0.12.6"
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
@@ -44,6 +45,10 @@ dependencies {
 	testCompileOnly("org.projectlombok:lombok")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	testAnnotationProcessor("org.projectlombok:lombok")
+    implementation("io.jsonwebtoken:jjwt-api:${property("jjwtVersion")}")
+    implementation("io.jsonwebtoken:jjwt-impl:${property("jjwtVersion")}")
+    implementation("io.jsonwebtoken:jjwt-jackson:${property("jjwtVersion")}")
+
 }
 
 dependencyManagement {
