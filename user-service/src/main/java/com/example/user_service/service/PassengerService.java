@@ -1,5 +1,6 @@
 package com.example.user_service.service;
 
+import com.example.user_service.dto.PassengerRequest;
 import com.example.user_service.entity.Passenger;
 import com.example.user_service.repository.PassengerRepository;
 import org.springframework.stereotype.Service;
@@ -13,14 +14,15 @@ public class PassengerService {
         this.passengerRepository = passengerRepository;
     }
     @Transactional
-    public Passenger RegisterPassenger(String name, String email, String phone){
-        if(passengerRepository.existsByEmail(email)){
-            throw new IllegalArgumentException("такой Email уже существует");
+    public Passenger RegisterPassenger(PassengerRequest request) {
+        if (passengerRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("Пассажир с таким email уже существует");
         }
         Passenger passenger = new Passenger();
-        passenger.setName(name);
-        passenger.setEmail(email);
-        passenger.setPhone(phone);
+        passenger.setName(request.getName());
+        passenger.setEmail(request.getEmail());
+        passenger.setPhone(request.getPhone());
+        // createdAt автоматом
         return passengerRepository.save(passenger);
     }
     public Passenger getPassengerById(Long id){
