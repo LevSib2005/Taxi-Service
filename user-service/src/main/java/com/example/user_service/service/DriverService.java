@@ -1,5 +1,6 @@
 package com.example.user_service.service;
 
+import com.example.user_service.dto.DriverRequest;
 import com.example.user_service.entity.Driver;
 import com.example.user_service.repository.DriverRepository;
 import org.springframework.stereotype.Service;
@@ -13,15 +14,15 @@ public class DriverService {
         this.driverRepository = driverRepository;
     }
     @Transactional
-    public Driver RegisterDriver(String name, String email, String phone, String licenseNumber){
-        if (driverRepository.existsByEmail(email)){
+    public Driver registerDriver(DriverRequest request) {
+        if (driverRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Водитель с таким email уже существует");
         }
         Driver driver = new Driver();
-        driver.setName(name);
-        driver.setEmail(email);
-        driver.setPhone(phone);
-        driver.setLicenseNumber(licenseNumber);
+        driver.setName(request.getName());
+        driver.setEmail(request.getEmail());
+        driver.setPhone(request.getPhone());
+        driver.setLicenseNumber(request.getLicenseNumber());
         return driverRepository.save(driver);
     }
 
