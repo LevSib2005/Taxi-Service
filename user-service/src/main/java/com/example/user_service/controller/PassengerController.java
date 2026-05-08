@@ -29,6 +29,7 @@ public class PassengerController {
     private final PassengerService passengerService;
     private final PassengerMapper mapper;
 
+    // Публичный эндпоинт — без @PreAuthorize
     @Operation(summary = "Зарегистрировать пассажира")
     @PostMapping
     public ResponseEntity<Map<String, Object>> register(@Valid @RequestBody PassengerRequest request) {
@@ -45,24 +46,26 @@ public class PassengerController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    // Защищённый эндпоинт — только для авторизованного пассажира
     @Operation(
             summary = "Получить профиль пассажира по ID",
             security = @SecurityRequirement(name = "Bearer Authentication")
     )
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('PASSENGER')")
-    public ResponseEntity<PassengerResponse> get(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<PassengerResponse> get(
+            @PathVariable Long id,
+            Authentication authentication) {
+
         Long authenticatedUserId = (Long) authentication.getPrincipal();
 
-        // Пассажир может получить только свой профиль
         if (!authenticatedUserId.equals(id)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         try {
             Passenger passenger = passengerService.getPassengerById(id);
-            PassengerResponse response = mapper.toResponse(passenger);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(mapper.toResponse(passenger));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }

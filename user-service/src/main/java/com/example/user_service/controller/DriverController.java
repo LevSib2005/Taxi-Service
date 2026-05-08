@@ -30,6 +30,7 @@ public class DriverController {
     private final DriverService driverService;
     private final DriverMapper mapper;
 
+    // Публичный эндпоинт — без @PreAuthorize
     @Operation(summary = "Зарегистрировать водителя")
     @PostMapping
     public ResponseEntity<Map<String, Object>> register(@Valid @RequestBody DriverRequest request) {
@@ -46,29 +47,32 @@ public class DriverController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    // Защищённый эндпоинт — только для авторизованного водителя
     @Operation(
             summary = "Получить профиль водителя по ID",
             security = @SecurityRequirement(name = "Bearer Authentication")
     )
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('DRIVER')")
-    public ResponseEntity<DriverResponse> get(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<DriverResponse> get(
+            @PathVariable Long id,
+            Authentication authentication) {
+
         Long authenticatedUserId = (Long) authentication.getPrincipal();
 
-        // Водитель может получить только свой профиль
         if (!authenticatedUserId.equals(id)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         try {
             Driver driver = driverService.getDriverById(id);
-            DriverResponse response = mapper.toResponse(driver);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(mapper.toResponse(driver));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
+    // Защищённый эндпоинт — только для авторизованного водителя
     @Operation(
             summary = "Обновить статус водителя",
             security = @SecurityRequirement(name = "Bearer Authentication")
@@ -82,15 +86,13 @@ public class DriverController {
 
         Long authenticatedUserId = (Long) authentication.getPrincipal();
 
-        // Водитель может обновить только свой статус
         if (!authenticatedUserId.equals(id)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         try {
             Driver driver = driverService.updateDriverStatus(id, request.getStatus());
-            DriverResponse response = mapper.toResponse(driver);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(mapper.toResponse(driver));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }

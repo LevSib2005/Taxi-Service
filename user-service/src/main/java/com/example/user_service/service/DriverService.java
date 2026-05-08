@@ -11,8 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional(readOnly = true)
 @RequiredArgsConstructor
+// Убираем @Transactional(readOnly = true) с уровня класса
 public class DriverService {
 
     private final DriverRepository driverRepository;
@@ -34,17 +34,25 @@ public class DriverService {
         return driverRepository.save(driver);
     }
 
+    // Явно указываем что транзакция НЕ read-only
+    @Transactional
     public TokenResponse generateTokensForDriver(Long driverId) {
         String accessToken = jwtTokenProvider.generateAccessToken(driverId, UserType.DRIVER.name());
-        String refreshToken = refreshTokenService.createRefreshToken(driverId, UserType.DRIVER, 7 * 24 * 3600_000L);
+        String refreshToken = refreshTokenService.createRefreshToken(
+                driverId,
+                UserType.DRIVER,
+                7 * 24 * 3600_000L
+        );
         return new TokenResponse(accessToken, refreshToken);
     }
 
+    @Transactional(readOnly = true)
     public Driver getDriverById(Long id) {
         return driverRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Водитель не найден"));
     }
 
+    @Transactional(readOnly = true)
     public Driver getDriverByEmail(String email) {
         return driverRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Водитель не найден"));

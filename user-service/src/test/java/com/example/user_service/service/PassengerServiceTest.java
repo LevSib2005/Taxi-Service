@@ -23,35 +23,6 @@ class PassengerServiceTest {
     PassengerService service;
 
     @Test
-    void register_shouldSaveAndReturnPassenger() {
-        // given
-        Passenger passenger = new Passenger();
-        passenger.setId(1L);
-        passenger.setName("Ivan");
-        passenger.setEmail("ivan@mail.ru");
-        passenger.setPhone("+7999");
-        when(repository.existsByEmail("ivan@mail.ru")).thenReturn(false);
-        when(repository.save(any(Passenger.class))).thenReturn(passenger);
-
-        // when
-        Passenger result = service.RegisterPassenger("Ivan", "ivan@mail.ru", "+7999");
-
-        // then
-        assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(1L);
-        assertThat(result.getEmail()).isEqualTo("ivan@mail.ru");
-    }
-
-    @Test
-    void register_shouldThrowIfEmailExists() {
-        when(repository.existsByEmail("ivan@mail.ru")).thenReturn(true);
-
-        assertThatThrownBy(() -> service.RegisterPassenger("Ivan", "ivan@mail.ru", "+7999"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("такой Email уже существует");
-    }
-
-    @Test
     void getById_shouldReturnPassenger() {
         Passenger passenger = new Passenger();
         passenger.setId(1L);

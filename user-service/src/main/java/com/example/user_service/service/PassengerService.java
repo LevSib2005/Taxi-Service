@@ -11,8 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional(readOnly = true)
 @RequiredArgsConstructor
+// Убираем @Transactional(readOnly = true) с уровня класса
 public class PassengerService {
 
     private final PassengerRepository passengerRepository;
@@ -33,17 +33,25 @@ public class PassengerService {
         return passengerRepository.save(passenger);
     }
 
+    // Явно указываем что транзакция НЕ read-only
+    @Transactional
     public TokenResponse generateTokensForPassenger(Long passengerId) {
         String accessToken = jwtTokenProvider.generateAccessToken(passengerId, UserType.PASSENGER.name());
-        String refreshToken = refreshTokenService.createRefreshToken(passengerId, UserType.PASSENGER, 7 * 24 * 3600_000L);
+        String refreshToken = refreshTokenService.createRefreshToken(
+                passengerId,
+                UserType.PASSENGER,
+                7 * 24 * 3600_000L
+        );
         return new TokenResponse(accessToken, refreshToken);
     }
 
+    @Transactional(readOnly = true)
     public Passenger getPassengerById(Long id) {
         return passengerRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Пассажир не найден"));
     }
 
+    @Transactional(readOnly = true)
     public Passenger getPassengerByEmail(String email) {
         return passengerRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Пассажир не найден"));
