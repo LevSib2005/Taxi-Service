@@ -3,12 +3,12 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: user-service-postgres
+    container_name: postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -36,7 +36,7 @@ services:
 
   redis:
     image: redis:7.2-alpine
-    container_name: user-service-redis
+    container_name: redis
     ports:
       - "6379:6379"
     volumes:
@@ -51,7 +51,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
-    container_name: user-service-rabbitmq
+    container_name: rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
