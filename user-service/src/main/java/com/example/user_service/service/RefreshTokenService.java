@@ -5,6 +5,7 @@ import com.example.user_service.entity.RefreshToken.UserType;
 import com.example.user_service.repository.RefreshTokenRepository;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,13 +24,12 @@ import java.util.UUID;
 public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
+    private final SecretKey secretKey;
 
-    private final SecretKey secretKey = Keys.hmacShaKeyFor(
-            "my-secret-at-least-256-bits-long-for-jwt".getBytes(StandardCharsets.UTF_8)
-    );
-
-    public RefreshTokenService(RefreshTokenRepository refreshTokenRepository) {
+    public RefreshTokenService(RefreshTokenRepository refreshTokenRepository,
+                               @Value("${gateway.secret}") String secret) {
         this.refreshTokenRepository = refreshTokenRepository;
+        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
     @Transactional

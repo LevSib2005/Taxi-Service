@@ -1,7 +1,9 @@
 package com.example.user_service.config;
 
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,6 +16,14 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("User Service API")
                         .version("1.0")
-                        .description("API для управления пассажирами и водителями"));
+                        .description("API для управления пассажирами и водителями"))
+                .components(new Components()
+                        .addSecuritySchemes("Bearer", new SecurityScheme()
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")
+                                .description("JWT токен из Identity Service")
+                        )
+                );
     }
 }

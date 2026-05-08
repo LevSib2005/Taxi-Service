@@ -81,6 +81,13 @@ springdoc:
     operationsSorter: method
     tagsSorter: alpha
 
+gateway:
+  secret: ${JWT_SECRET:dev-secret-key-min-32-chars-for-hmac-sha256}
+  issuer: ${JWT_ISSUER:user-service}
+  header: ${JWT_HEADER:X-Gateway-Header}
+  header-key: ${HEADER_KEY:dev-secret-key-for-microservices}
+  access-token-ttl: 900000
+
 server:
   port: 8080
 
