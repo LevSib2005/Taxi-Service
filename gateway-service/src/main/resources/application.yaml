@@ -2,15 +2,19 @@ server:
   port: 8000
 
 spring:
-  application:
-    name: gateway-service
   cloud:
     gateway:
-      routes:
-        - id: user-service
-          uri: http://localhost:8080
-          predicates:
-            - Path=/passengers/**, /drivers/**, /auth/**
+      server:
+        webflux:
+          routes:
+            - id: user-service
+              uri: http://localhost:8080
+              predicates:
+                - Path=/passengers/**, /drivers/**, /auth/**
+            - id: user-service-docs
+              uri: http://localhost:8080
+              predicates:
+                - Path=/api-docs/**, /swagger-ui.html, /swagger-ui/**, /webjars/**
 
 gateway:
   secret: ${JWT_SECRET:dev-secret-key-min-32-chars-for-hmac-sha256}
@@ -22,3 +26,4 @@ gateway:
     - /swagger-ui/
     - /swagger-ui.html
     - /webjars/
+    - /api-docs/

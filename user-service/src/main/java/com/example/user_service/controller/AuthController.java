@@ -3,79 +3,74 @@ package com.example.user_service.controller;
 import com.example.user_service.dto.LoginRequest;
 import com.example.user_service.dto.RefreshTokenRequest;
 import com.example.user_service.dto.TokenResponse;
+import com.example.user_service.entity.Driver;
+import com.example.user_service.entity.Passenger;
 import com.example.user_service.entity.RefreshToken.UserType;
+import com.example.user_service.security.JwtTokenProvider;
+import com.example.user_service.service.DriverService;
+import com.example.user_service.service.PassengerService;
 import com.example.user_service.service.RefreshTokenService;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
 
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "Аутентификация пользователей")
 public class AuthController {
 
     private final RefreshTokenService refreshTokenService;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final PassengerService passengerService;
+    private final DriverService driverService;
 
-    @Value("${gateway.secret}")
-    private String jwtSecret;
-
-    @Value("${gateway.access-token-ttl}")
-    private long accessTokenTtl;
-
+    @Operation(summary = "Войти в систему (по email)")
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
-        // Временная заглушка аутентификации
-        if (!"password".equals(request.getPassword())) {
-            return ResponseEntity.status(401).build();
+        // Пытаемся найти пассажира
+        try {
+            Passenger passenger = passengerService.getPassengerByEmail(request.getEmail());
+            TokenResponse tokens = passengerService.generateTokensForPassenger(passenger.getId());
+            return ResponseEntity.ok(tokens);
+        } catch (IllegalArgumentException e) {
+            // Если пассажир не найден, ищем водителя
         }
 
-        // TODO: найти реального пользователя по email в БД
-        Long userId = 1L;
-        UserType userType = UserType.PASSENGER;
-
-        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-        Date now = new Date();
-        Date expiry = new Date(now.getTime() + accessTokenTtl);
-
-        String accessToken = Jwts.builder()
-                .subject(userId.toString())
-                .claim("userType", userType.name())
-                .issuedAt(now)
-                .expiration(expiry)
-                .signWith(key)
-                .compact();
-
-        String refreshToken = refreshTokenService.createRefreshToken(userId, userType, 7 * 24 * 3600_000L);
-
-        return ResponseEntity.ok(new TokenResponse(accessToken, refreshToken));
+        // Пытаемся найти водителя
+        try {
+            Driver driver = driverService.getDriverByEmail(request.getEmail());
+            TokenResponse tokens = driverService.generateTokensForDriver(driver.getId());
+            return ResponseEntity.ok(tokens);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(401).build();
+        }
     }
 
+    @Operation(summary = "Обновить access token используя refresh token")
     @PostMapping("/refresh")
     public ResponseEntity<TokenResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         var refreshTokenEntity = refreshTokenService.validateRefreshToken(request.getRefreshToken());
         Long userId = refreshTokenEntity.getUserId();
         UserType userType = refreshTokenEntity.getUserType();
 
-        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-        Date now = new Date();
-        Date expiry = new Date(now.getTime() + accessTokenTtl);
-
-        String accessToken = Jwts.builder()
-                .subject(userId.toString())
-                .claim("userType", userType.name())
-                .issuedAt(now)
-                .expiration(expiry)
-                .signWith(key)
-                .compact();
+        String accessToken = jwtTokenProvider.generateAccessToken(userId, userType.name());
 
         return ResponseEntity.ok(new TokenResponse(accessToken, request.getRefreshToken()));
+    }
+
+    @Operation(summary = "Выйти из системы (удалить refresh токены)")
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        try {
+            var refreshTokenEntity = refreshTokenService.validateRefreshToken(request.getRefreshToken());
+            refreshTokenService.deleteUserTokens(refreshTokenEntity.getUserId(), refreshTokenEntity.getUserType());
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }
