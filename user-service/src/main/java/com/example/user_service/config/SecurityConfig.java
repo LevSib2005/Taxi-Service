@@ -4,11 +4,11 @@ import com.example.user_service.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -27,6 +27,7 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        // Swagger и actuator
                         .requestMatchers(
                                 "/api-docs/**",
                                 "/swagger-ui/**",
@@ -34,9 +35,15 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/actuator/**"
                         ).permitAll()
+                        // Auth эндпоинты
                         .requestMatchers("/auth/**").permitAll()
+                        // Регистрация — только POST открыт
                         .requestMatchers(HttpMethod.POST, "/passengers").permitAll()
                         .requestMatchers(HttpMethod.POST, "/drivers").permitAll()
+                        // Внутренний эндпоинт для trip-service
+                        // Защита через gateway header, не через JWT
+                        .requestMatchers(HttpMethod.GET, "/drivers/available").permitAll()
+                        // Всё остальное требует аутентификации
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

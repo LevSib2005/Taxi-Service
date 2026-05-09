@@ -1,3 +1,52 @@
+server:
+  port: 8082
+
 spring:
   application:
     name: trip-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5433/trip_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+services:
+  user-service:
+    url: http://localhost:8080
+
+gateway:
+  header: ${JWT_HEADER:X-Gateway-Header}
+  header-key: ${HEADER_KEY:dev-secret-key-for-microservices}
+
+logging:
+  level:
+    com.example: DEBUG
+    org.springframework.web: INFO

@@ -12,6 +12,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/drivers")
 @RequiredArgsConstructor
@@ -30,12 +33,21 @@ public class DriverController {
     private final DriverService driverService;
     private final DriverMapper mapper;
 
+    @Value("${gateway.header-key}")
+    private String headerKey;
+
+    @Value("${gateway.header}")
+    private String gatewayHeader;
+
+    // ===== Публичные эндпоинты =====
+
     @Operation(summary = "Зарегистрировать водителя")
     @PostMapping
-    public ResponseEntity<Map<String, Object>> register(@Valid @RequestBody DriverRequest request) {
+    public ResponseEntity<Map<String, Object>> register(
+            @Valid @RequestBody DriverRequest request) {
+
         Driver driver = driverService.registerDriver(request);
         TokenResponse tokenResponse = driverService.generateTokensForDriver(driver.getId());
-
         DriverResponse driverResponse = mapper.toResponse(driver);
 
         Map<String, Object> response = new HashMap<>();
@@ -45,6 +57,30 @@ public class DriverController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    // ===== Внутренний эндпоинт для trip-service =====
+
+    @Operation(summary = "Получить свободного водителя (внутренний эндпоинт для trip-service)")
+    @GetMapping("/available")
+    public ResponseEntity<DriverResponse> getAvailable(
+            @RequestHeader(value = "${gateway.header}", required = false) String incomingHeaderValue) {
+
+        // Проверяем что запрос пришёл от доверенного сервиса через gateway
+        if (!headerKey.equals(incomingHeaderValue)) {
+            log.warn("Unauthorized access attempt to /drivers/available");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        try {
+            Driver driver = driverService.getAvailableDriver();
+            return ResponseEntity.ok(mapper.toResponse(driver));
+        } catch (IllegalStateException e) {
+            log.warn("No available drivers found");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        }
+    }
+
+    // ===== Защищённые эндпоинты =====
 
     @Operation(
             summary = "Получить профиль водителя по ID",

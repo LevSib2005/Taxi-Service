@@ -8,6 +8,11 @@
           <package value="com.example.user_service" />
         </packages>
       </persistence-unit>
+      <persistence-unit moduleName="trip-service.main" name="Default">
+        <packages>
+          <package value="com.example.trip_service" />
+        </packages>
+      </persistence-unit>
     </persistence-units>
   </component>
 </project>

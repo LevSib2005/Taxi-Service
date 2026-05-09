@@ -11,6 +11,12 @@ spring:
               uri: http://localhost:8080
               predicates:
                 - Path=/passengers/**, /drivers/**, /auth/**
+
+            - id: trip-service
+              uri: http://localhost:8082
+              predicates:
+                - Path=/trips/**
+
             - id: user-service-docs
               uri: http://localhost:8080
               predicates:
@@ -26,4 +32,3 @@ gateway:
     - /swagger-ui/
     - /swagger-ui.html
     - /webjars/
-    - /api-docs/

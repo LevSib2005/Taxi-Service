@@ -62,4 +62,10 @@ public class DriverService {
         driver.setStatus(newStatus);
         return driverRepository.save(driver);
     }
+
+    @Transactional(readOnly = true)
+    public Driver getAvailableDriver() {
+        return driverRepository.findFirstByStatus(Driver.DriverStatus.FREE)
+                .orElseThrow(() -> new IllegalStateException("Нет доступных водителей"));
+    }
 }
