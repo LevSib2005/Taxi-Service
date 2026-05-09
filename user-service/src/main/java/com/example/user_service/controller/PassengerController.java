@@ -29,7 +29,6 @@ public class PassengerController {
     private final PassengerService passengerService;
     private final PassengerMapper mapper;
 
-    // Публичный эндпоинт — без @PreAuthorize
     @Operation(summary = "Зарегистрировать пассажира")
     @PostMapping
     public ResponseEntity<Map<String, Object>> register(@Valid @RequestBody PassengerRequest request) {
