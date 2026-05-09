@@ -6,6 +6,7 @@ import com.example.trip_service.dto.DriverResponse;
 import com.example.trip_service.entity.Trip;
 import com.example.trip_service.entity.Trip.TripStatus;
 import com.example.trip_service.repository.TripRepository;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -33,43 +34,63 @@ public class TripService {
 
     @Transactional
     public Trip create(CreateTripRequest request, Long passengerId) {
-        // Проверяем что пассажир существует
-        userServiceClient.checkPassenger(passengerId);
+        log.info("Creating trip - passengerId: {}, origin: {}, destination: {}",
+                passengerId, request.getOrigin(), request.getDestination());
 
-        // Получаем свободного водителя
-        DriverResponse driver = getAvailableDriver();
+        try {
+            // Проверяем что пассажир существует
+            log.debug("Checking passenger existence...");
+            checkPassenger(passengerId);
+            log.debug("Passenger check passed");
 
-        Trip trip = new Trip();
-        trip.setPassengerId(passengerId);
-        trip.setDriverId(driver.getId());
-        trip.setStatus(TripStatus.CREATED);
-        trip.setOrigin(request.getOrigin());
-        trip.setDestination(request.getDestination());
-        trip.setPrice(calculatePrice());
+            // Получаем свободного водителя
+            log.debug("Fetching available driver...");
+            DriverResponse driver = getAvailableDriver();
+            log.info("Driver assigned: id={}, name={}", driver.getId(), driver.getName());
 
-        tripRepository.save(trip);
+            Trip trip = new Trip();
+            trip.setPassengerId(passengerId);
+            trip.setDriverId(driver.getId());
+            trip.setStatus(TripStatus.CREATED);
+            trip.setOrigin(request.getOrigin());
+            trip.setDestination(request.getDestination());
+            trip.setPrice(calculatePrice());
 
-        log.debug("Trip created: id={}, passengerId={}, driverId={}",
-                trip.getId(), passengerId, driver.getId());
+            tripRepository.save(trip);
 
-        // Уведомляем о создании поездки
-        rabbitTemplate.convertAndSend(
-                TRIP_EXCHANGE,
-                "trip.created",
-                trip.getId()
-        );
+            log.info("Trip created successfully: id={}", trip.getId());
 
-        // Меняем статус водителя на BUSY
-        rabbitTemplate.convertAndSend(
-                USER_EXCHANGE,
-                "driver.status.update",
-                new DriverStatusEvent(driver.getId(), "BUSY")
-        );
+            // Уведомляем о создании поездки
+            rabbitTemplate.convertAndSend(
+                    TRIP_EXCHANGE,
+                    "trip.created",
+                    trip.getId()
+            );
 
-        // Кэшируем водителя
-        redisTemplate.opsForValue().set(DRIVER_CACHE_KEY, driver, CACHE_TTL_SECONDS, TimeUnit.SECONDS);
+            // Меняем статус водителя на BUSY
+            rabbitTemplate.convertAndSend(
+                    USER_EXCHANGE,
+                    "driver.status.update",
+                    new DriverStatusEvent(driver.getId(), "BUSY")
+            );
 
-        return trip;
+            // Кэшируем водителя
+            redisTemplate.opsForValue().set(DRIVER_CACHE_KEY, driver, CACHE_TTL_SECONDS, TimeUnit.SECONDS);
+
+            return trip;
+        } catch (FeignException.NotFound e) {
+            log.error("Passenger or driver not found: {}", e.getMessage());
+            throw new IllegalArgumentException("Пассажир не найден или нет доступных водителей");
+        } catch (FeignException.Forbidden e) {
+            log.error("Forbidden access to user-service: {}", e.getMessage());
+            throw new IllegalStateException("Ошибка доступа к сервису пользователей");
+        } catch (FeignException e) {
+            log.error("Feign error: status={}, message={}", e.status(), e.getMessage());
+            throw new RuntimeException("Ошибка связи с сервисом пользователей", e);
+        } catch (Exception e) {
+            log.error("Error creating trip: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     @Transactional(readOnly = true)
@@ -87,7 +108,6 @@ public class TripService {
     public Trip updateStatus(Long id, TripStatus newStatus, Long driverId) {
         Trip trip = getById(id);
 
-        // Только водитель назначенный на поездку может менять статус
         if (!trip.getDriverId().equals(driverId)) {
             throw new IllegalArgumentException("Водитель не назначен на эту поездку");
         }
@@ -97,25 +117,32 @@ public class TripService {
 
         log.debug("Trip status updated: id={}, status={}", id, newStatus);
 
-        // Уведомляем об изменении статуса
         rabbitTemplate.convertAndSend(
                 TRIP_EXCHANGE,
                 "trip.status.changed",
                 trip.getId()
         );
 
-        // Если поездка завершена или отменена — освобождаем водителя
         if (newStatus == TripStatus.COMPLETED || newStatus == TripStatus.CANCELLED) {
             rabbitTemplate.convertAndSend(
                     USER_EXCHANGE,
                     "driver.status.update",
                     new DriverStatusEvent(trip.getDriverId(), "FREE")
             );
-            // Очищаем кэш водителя
             redisTemplate.delete(DRIVER_CACHE_KEY);
         }
 
         return trip;
+    }
+
+    private void checkPassenger(Long passengerId) {
+        try {
+            userServiceClient.getPassenger(passengerId);
+            log.debug("Passenger verified: id={}", passengerId);
+        } catch (FeignException.NotFound e) {
+            log.error("Passenger not found: {}", passengerId);
+            throw new IllegalArgumentException("Пассажир не найден: " + passengerId);
+        }
     }
 
     private DriverResponse getAvailableDriver() {
@@ -126,11 +153,19 @@ public class TripService {
             return cached;
         }
 
-        // Если нет в кэше — запрашиваем из user-service
-        DriverResponse driver = userServiceClient.getAvailableDriver();
-        redisTemplate.opsForValue().set(DRIVER_CACHE_KEY, driver, CACHE_TTL_SECONDS, TimeUnit.SECONDS);
-
-        return driver;
+        // Если нет в кэше — запрашиваем через Feign
+        try {
+            DriverResponse driver = userServiceClient.getAvailableDriver();
+            redisTemplate.opsForValue().set(DRIVER_CACHE_KEY, driver, CACHE_TTL_SECONDS, TimeUnit.SECONDS);
+            log.debug("Driver fetched from user-service: id={}", driver.getId());
+            return driver;
+        } catch (FeignException.NotFound e) {
+            log.error("No available drivers found");
+            throw new IllegalStateException("Нет доступных водителей");
+        } catch (FeignException.ServiceUnavailable e) {
+            log.error("User service unavailable");
+            throw new IllegalStateException("Сервис пользователей недоступен");
+        }
     }
 
     private double calculatePrice() {
@@ -139,6 +174,5 @@ public class TripService {
         return distance * rate;
     }
 
-    // Внутренний record для события
     public record DriverStatusEvent(Long driverId, String status) {}
 }

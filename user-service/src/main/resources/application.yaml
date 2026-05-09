@@ -78,8 +78,9 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
-    operationsSorter: method
-    tagsSorter: alpha
+  default-servers:
+    - url: http://localhost:8000
+      description: API Gateway
 
 gateway:
   secret: ${JWT_SECRET:dev-secret-key-min-32-chars-for-hmac-sha256}

@@ -20,6 +20,11 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
   data:
     redis:
       host: localhost
@@ -37,6 +42,9 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
+  default-servers:
+    - url: http://localhost:8000
+      description: API Gateway
 
 services:
   user-service:
@@ -46,7 +54,15 @@ gateway:
   header: ${JWT_HEADER:X-Gateway-Header}
   header-key: ${HEADER_KEY:dev-secret-key-for-microservices}
 
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+        loggerLevel: FULL
+
 logging:
   level:
-    com.example: DEBUG
+    com.example.trip_service: DEBUG
     org.springframework.web: INFO

@@ -23,7 +23,6 @@ import java.util.List;
 @RequestMapping("/trips")
 @RequiredArgsConstructor
 @Tag(name = "Trips", description = "Управление поездками")
-// Применяем замок ко всем эндпоинтам контроллера сразу
 @SecurityRequirement(name = "Bearer Authentication")
 public class TripController {
 
@@ -36,12 +35,22 @@ public class TripController {
             @RequestHeader("X-User-Id") Long passengerId,
             @RequestHeader("X-User-Type") String userType) {
 
+        log.info("Create trip - passengerId: {}, userType: {}", passengerId, userType);
+
         if (!"PASSENGER".equals(userType)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        Trip trip = tripService.create(request, passengerId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(TripMapper.toResponse(trip));
+        try {
+            Trip trip = tripService.create(request, passengerId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(TripMapper.toResponse(trip));
+        } catch (IllegalArgumentException e) {
+            log.error("Bad request: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error creating trip: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @Operation(summary = "Получить поездку по ID")
@@ -51,16 +60,20 @@ public class TripController {
             @RequestHeader("X-User-Id") Long userId,
             @RequestHeader("X-User-Type") String userType) {
 
-        Trip trip = tripService.getById(id);
+        try {
+            Trip trip = tripService.getById(id);
 
-        if ("PASSENGER".equals(userType) && !trip.getPassengerId().equals(userId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-        if ("DRIVER".equals(userType) && !trip.getDriverId().equals(userId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
+            if ("PASSENGER".equals(userType) && !trip.getPassengerId().equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            if ("DRIVER".equals(userType) && !trip.getDriverId().equals(userId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
 
-        return ResponseEntity.ok(TripMapper.toResponse(trip));
+            return ResponseEntity.ok(TripMapper.toResponse(trip));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @Operation(summary = "Получить поездки пассажира")
@@ -73,12 +86,17 @@ public class TripController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        List<TripResponse> trips = tripService.getByPassengerId(passengerId)
-                .stream()
-                .map(TripMapper::toResponse)
-                .toList();
+        try {
+            List<TripResponse> trips = tripService.getByPassengerId(passengerId)
+                    .stream()
+                    .map(TripMapper::toResponse)
+                    .toList();
 
-        return ResponseEntity.ok(trips);
+            return ResponseEntity.ok(trips);
+        } catch (Exception e) {
+            log.error("Error fetching trips: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @Operation(summary = "Обновить статус поездки")
@@ -97,7 +115,11 @@ public class TripController {
             Trip trip = tripService.updateStatus(id, request.getStatus(), driverId);
             return ResponseEntity.ok(TripMapper.toResponse(trip));
         } catch (IllegalArgumentException e) {
+            log.error("Forbidden: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (Exception e) {
+            log.error("Error updating trip: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }
