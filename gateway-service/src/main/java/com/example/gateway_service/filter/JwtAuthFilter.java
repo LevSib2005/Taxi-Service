@@ -77,17 +77,14 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isPublicPath(String path) {
-        // Открытые маршруты для регистрации
         if (path.equals("/passengers") || path.equals("/drivers")) {
             return true;
         }
 
-        // Auth всегда открыт
         if (path.startsWith("/auth/")) {
             return true;
         }
 
-        // Проверяем префиксы из конфигурации
         if (properties.getOpenRoutes() != null) {
             return properties.getOpenRoutes().stream()
                     .anyMatch(path::startsWith);

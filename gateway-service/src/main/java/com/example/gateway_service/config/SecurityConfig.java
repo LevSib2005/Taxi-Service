@@ -15,18 +15,16 @@ public class SecurityConfig {
         http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
-                        // Публичные эндпоинты
                         .pathMatchers(
                                 "/auth/**",
-                                "/passengers",  // POST регистрация
-                                "/drivers",     // POST регистрация
+                                "/passengers",
+                                "/drivers",
                                 "/actuator/**",
                                 "/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/webjars/**"
                         ).permitAll()
-                        // Все остальные требуют аутентификации
                         .anyExchange().authenticated()
                 );
         return http.build();

@@ -27,7 +27,6 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // Swagger
                         .requestMatchers(
                                 "/api-docs/**",
                                 "/swagger-ui/**",
@@ -35,12 +34,9 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/actuator/**"
                         ).permitAll()
-                        // Auth эндпоинты
                         .requestMatchers("/auth/**").permitAll()
-                        // Регистрация — только POST открыт
                         .requestMatchers(HttpMethod.POST, "/passengers").permitAll()
                         .requestMatchers(HttpMethod.POST, "/drivers").permitAll()
-                        // Всё остальное требует аутентификации
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

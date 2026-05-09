@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-// Убираем @Transactional(readOnly = true) с уровня класса
 public class DriverService {
 
     private final DriverRepository driverRepository;
@@ -34,7 +33,6 @@ public class DriverService {
         return driverRepository.save(driver);
     }
 
-    // Явно указываем что транзакция НЕ read-only
     @Transactional
     public TokenResponse generateTokensForDriver(Long driverId) {
         String accessToken = jwtTokenProvider.generateAccessToken(driverId, UserType.DRIVER.name());

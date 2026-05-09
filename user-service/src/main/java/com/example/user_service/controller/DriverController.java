@@ -30,7 +30,6 @@ public class DriverController {
     private final DriverService driverService;
     private final DriverMapper mapper;
 
-    // Публичный эндпоинт — без @PreAuthorize
     @Operation(summary = "Зарегистрировать водителя")
     @PostMapping
     public ResponseEntity<Map<String, Object>> register(@Valid @RequestBody DriverRequest request) {
@@ -47,7 +46,6 @@ public class DriverController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // Защищённый эндпоинт — только для авторизованного водителя
     @Operation(
             summary = "Получить профиль водителя по ID",
             security = @SecurityRequirement(name = "Bearer Authentication")
@@ -72,7 +70,6 @@ public class DriverController {
         }
     }
 
-    // Защищённый эндпоинт — только для авторизованного водителя
     @Operation(
             summary = "Обновить статус водителя",
             security = @SecurityRequirement(name = "Bearer Authentication")

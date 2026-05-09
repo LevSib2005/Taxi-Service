@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-// Убираем @Transactional(readOnly = true) с уровня класса
 public class PassengerService {
 
     private final PassengerRepository passengerRepository;
@@ -33,7 +32,6 @@ public class PassengerService {
         return passengerRepository.save(passenger);
     }
 
-    // Явно указываем что транзакция НЕ read-only
     @Transactional
     public TokenResponse generateTokensForPassenger(Long passengerId) {
         String accessToken = jwtTokenProvider.generateAccessToken(passengerId, UserType.PASSENGER.name());

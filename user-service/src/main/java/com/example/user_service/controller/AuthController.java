@@ -33,24 +33,20 @@ public class AuthController {
     @Operation(summary = "Войти в систему (по email)")
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
-        // Сначала ищем пассажира
         try {
             Passenger passenger = passengerService.getPassengerByEmail(request.getEmail());
             TokenResponse tokens = passengerService.generateTokensForPassenger(passenger.getId());
             log.debug("Passenger logged in: {}", request.getEmail());
             return ResponseEntity.ok(tokens);
         } catch (IllegalArgumentException ignored) {
-            // Пассажир не найден, ищем водителя
         }
 
-        // Затем ищем водителя
         try {
             Driver driver = driverService.getDriverByEmail(request.getEmail());
             TokenResponse tokens = driverService.generateTokensForDriver(driver.getId());
             log.debug("Driver logged in: {}", request.getEmail());
             return ResponseEntity.ok(tokens);
         } catch (IllegalArgumentException ignored) {
-            // Водитель не найден
         }
 
         log.warn("Login failed for email: {}", request.getEmail());

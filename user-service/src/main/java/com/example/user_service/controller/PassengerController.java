@@ -46,7 +46,6 @@ public class PassengerController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // Защищённый эндпоинт — только для авторизованного пассажира
     @Operation(
             summary = "Получить профиль пассажира по ID",
             security = @SecurityRequirement(name = "Bearer Authentication")
