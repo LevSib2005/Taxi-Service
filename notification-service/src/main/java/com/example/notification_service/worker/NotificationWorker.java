@@ -38,7 +38,7 @@ public class NotificationWorker {
 
     @PostConstruct
     public void start() {
-        log.info("🚀 Starting NotificationWorker with {} threads", poolSize);
+        log.info("Starting NotificationWorker with {} threads", poolSize);
         executor = Executors.newFixedThreadPool(poolSize);
 
         for (int i = 0; i < poolSize; i++) {
@@ -53,7 +53,6 @@ public class NotificationWorker {
 
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                // Получаем задачи в транзакции
                 List<NotificationTask> tasks = transactionTemplate.execute(status ->
                         repository.findPendingTasksWithLock(TaskStatus.PENDING)
                 );
@@ -83,24 +82,22 @@ public class NotificationWorker {
             try {
                 log.debug("Worker-{} processing task id={}", workerId, task.getId());
 
-                // Обновляем статус на PROCESSING
                 task.setStatus(TaskStatus.PROCESSING);
                 repository.save(task);
 
-                // Отправка уведомления
                 sendNotification(task);
 
                 task.setStatus(TaskStatus.SENT);
-                log.info("✅ Worker-{} sent notification: {}", workerId, task.getMessage());
+                log.info("Worker-{} sent notification: {}", workerId, task.getMessage());
 
             } catch (Exception e) {
                 task.setAttempts(task.getAttempts() + 1);
-                log.error("❌ Worker-{} failed to send (attempt {}): {}",
+                log.error("Worker-{} failed to send (attempt {}): {}",
                         workerId, task.getAttempts(), e.getMessage());
 
                 if (task.getAttempts() >= maxRetryAttempts) {
                     task.setStatus(TaskStatus.FAILED);
-                    log.error("💀 Task id={} marked as FAILED after {} attempts",
+                    log.error("Task id={} marked as FAILED after {} attempts",
                             task.getId(), maxRetryAttempts);
                 } else {
                     task.setStatus(TaskStatus.PENDING);
@@ -112,16 +109,13 @@ public class NotificationWorker {
     }
 
     private void sendNotification(NotificationTask task) throws InterruptedException {
-        log.info("📨 Sending: {}", task.getMessage());
+        log.info("Sending: {}", task.getMessage());
         Thread.sleep(1000);
-
-        // Для тестирования ошибок:
-        // if (Math.random() < 0.3) throw new RuntimeException("Simulated failure");
     }
 
     @PreDestroy
     public void shutdown() {
-        log.info("🛑 Shutting down NotificationWorker...");
+        log.info("Shutting down NotificationWorker...");
         executor.shutdown();
         try {
             if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
@@ -130,6 +124,6 @@ public class NotificationWorker {
         } catch (InterruptedException e) {
             executor.shutdownNow();
         }
-        log.info("✅ NotificationWorker stopped");
+        log.info("NotificationWorker stopped");
     }
 }

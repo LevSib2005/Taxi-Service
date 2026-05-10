@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
-@EnableFeignClients  // ← Включаем Feign
+@EnableFeignClients
 public class TripServiceApplication {
 
     public static void main(String[] args) {

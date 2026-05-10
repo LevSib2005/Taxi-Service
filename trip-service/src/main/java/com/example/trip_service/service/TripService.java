@@ -53,7 +53,6 @@ public class TripService {
             tripRepository.save(trip);
             log.info("Trip created successfully: id={}", trip.getId());
 
-            // ✅ Отправляем полный объект TripEvent
             publishTripEvent(trip, "trip.created");
 
             rabbitTemplate.convertAndSend(
@@ -98,7 +97,6 @@ public class TripService {
 
         log.debug("Trip status updated: id={}, status={}", id, newStatus);
 
-        // ✅ Отправляем полный объект TripEvent
         publishTripEvent(trip, "trip.status.changed");
 
         if (newStatus == TripStatus.COMPLETED || newStatus == TripStatus.CANCELLED) {

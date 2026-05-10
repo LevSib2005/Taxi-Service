@@ -19,11 +19,11 @@ public class TripEventListener {
             containerFactory = "rabbitListenerContainerFactory"
     )
     public void handleTripEvent(TripEvent event) {
-        log.info("📩 Received TripEvent: tripId={}, status={}, passenger={}, driver={}",
+        log.info("Received TripEvent: tripId={}, status={}, passenger={}, driver={}",
                 event.getTripId(), event.getStatus(), event.getPassengerId(), event.getDriverId());
 
         notificationService.createNotifications(event);
 
-        log.info("✅ Notifications created for tripId={}", event.getTripId());
+        log.info("Notifications created for tripId={}", event.getTripId());
     }
 }

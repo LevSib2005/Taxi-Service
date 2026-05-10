@@ -33,7 +33,6 @@ public class DriverController {
     private final DriverService driverService;
     private final DriverMapper mapper;
 
-    // ✅ Читаем значения через @Value
     @Value("${gateway.header}")
     private String gatewayHeader;
 

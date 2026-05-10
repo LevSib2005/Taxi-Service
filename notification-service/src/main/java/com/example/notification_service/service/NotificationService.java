@@ -18,7 +18,6 @@ public class NotificationService {
 
     @Transactional
     public void createNotifications(TripEvent event) {
-        // Уведомление для пассажира
         NotificationTask passengerTask = new NotificationTask();
         passengerTask.setTripId(event.getTripId());
         passengerTask.setRecipientType("PASSENGER");
@@ -28,7 +27,6 @@ public class NotificationService {
         passengerTask.setAttempts(0);
         repository.save(passengerTask);
 
-        // Уведомление для водителя
         if (event.getDriverId() != null) {
             NotificationTask driverTask = new NotificationTask();
             driverTask.setTripId(event.getTripId());

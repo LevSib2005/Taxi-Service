@@ -22,7 +22,7 @@ public class NotificationTask {
     private Long tripId;
 
     @Column(name = "recipient_type", nullable = false)
-    private String recipientType; // PASSENGER / DRIVER
+    private String recipientType;
 
     @Column(name = "recipient_id", nullable = false)
     private Long recipientId;

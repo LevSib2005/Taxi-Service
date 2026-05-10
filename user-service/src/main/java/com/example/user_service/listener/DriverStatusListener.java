@@ -39,7 +39,7 @@ public class DriverStatusListener {
         driver.setStatus(newStatus);
         driverRepository.save(driver);
 
-        log.info("✅ Driver status updated: id={}, status={}", driverId, newStatus);
+        log.info("Driver status updated: id={}, status={}", driverId, newStatus);
     }
 
     public record DriverStatusEvent(Long driverId, String status) {}
