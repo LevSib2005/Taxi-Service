@@ -17,7 +17,7 @@ public class DriverStatusListener {
 
     @RabbitListener(queues = "driver.status.queue")
     public void handleDriverStatusUpdate(DriverStatusEvent event) {
-        log.info("📩 Received DriverStatusEvent: driverId={}, status={}",
+        log.info("Received DriverStatusEvent: driverId={}, status={}",
                 event.driverId(), event.status());
 
         updateDriverStatus(event.driverId(), event.status());
