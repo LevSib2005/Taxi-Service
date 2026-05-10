@@ -35,6 +35,18 @@ spring:
               filters:
                 - RewritePath=/trip-service/api-docs(?<path>.*), /api-docs$\{path}
 
+            - id: notification-service
+              uri: http://localhost:8083
+              predicates:
+                - Path=/notifications/**
+
+            - id: notification-service-api-docs
+              uri: http://localhost:8083
+              predicates:
+                - Path=/notification-service/api-docs/**
+              filters:
+                - RewritePath=/notification-service/api-docs(?<path>.*), /api-docs$\{path}
+
 gateway:
   secret: ${JWT_SECRET:dev-secret-key-min-32-chars-for-hmac-sha256}
   issuer: ${JWT_ISSUER:user-service}
@@ -61,6 +73,8 @@ springdoc:
         url: /user-service/api-docs
       - name: trip-service
         url: /trip-service/api-docs
+      - name: notification-service
+        url: /notification-service/api-docs
     persistent-auth: true
     display-request-duration: true
 
