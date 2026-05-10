@@ -111,6 +111,26 @@ public class TripService {
         return trip;
     }
 
+    @Transactional
+    public Trip rateTrip(Long tripId, Long passengerId, Integer rating) {
+        Trip trip = getById(tripId);
+
+        if (!trip.getPassengerId().equals(passengerId)) {
+            throw new IllegalArgumentException("Вы не являетесь пассажиром этой поездки");
+        }
+
+        if (trip.getStatus() != TripStatus.COMPLETED) {
+            throw new IllegalArgumentException("Оценить можно только завершённую поездку");
+        }
+
+        if (trip.getRating() != null) {
+            throw new IllegalArgumentException("Поездка уже оценена");
+        }
+
+        trip.setRating(rating);
+        return tripRepository.save(trip);
+    }
+
     private void publishTripEvent(Trip trip, String routingKey) {
         TripEvent event = new TripEvent();
         event.setTripId(trip.getId());

@@ -18,6 +18,7 @@ public class TripResponse {
     private String origin;
     private String destination;
     private Double price;
+    private Integer rating;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

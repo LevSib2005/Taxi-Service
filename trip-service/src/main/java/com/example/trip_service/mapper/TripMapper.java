@@ -14,6 +14,7 @@ public class TripMapper {
                 trip.getOrigin(),
                 trip.getDestination(),
                 trip.getPrice(),
+                trip.getRating(),
                 trip.getCreatedAt(),
                 trip.getUpdatedAt()
         );

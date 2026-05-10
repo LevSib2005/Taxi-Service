@@ -1,6 +1,7 @@
 package com.example.trip_service.controller;
 
 import com.example.trip_service.dto.CreateTripRequest;
+import com.example.trip_service.dto.RatingRequest;
 import com.example.trip_service.dto.TripResponse;
 import com.example.trip_service.dto.UpdateTripStatusRequest;
 import com.example.trip_service.entity.Trip;
@@ -73,6 +74,27 @@ public class TripController {
             return ResponseEntity.ok(TripMapper.toResponse(trip));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    @Operation(summary = "Оценить поездку (только для пассажира)")
+    @PostMapping("/{id}/rating")
+    public ResponseEntity<TripResponse> rate(
+            @PathVariable Long id,
+            @Valid @RequestBody RatingRequest request,
+            @RequestHeader("X-User-Id") Long passengerId,
+            @RequestHeader("X-User-Type") String userType) {
+
+        if (!"PASSENGER".equals(userType)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        try {
+            Trip trip = tripService.rateTrip(id, passengerId, request.getRating());
+            return ResponseEntity.ok(TripMapper.toResponse(trip));
+        } catch (IllegalArgumentException e) {
+            log.error("Rating error: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
         }
     }
 

@@ -26,6 +26,8 @@ public class Trip {
     private String destination;
     private Double price;
 
+    private Integer rating;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;

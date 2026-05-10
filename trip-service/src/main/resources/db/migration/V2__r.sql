@@ -1,0 +1,2 @@
+ALTER TABLE trips ADD COLUMN rating INTEGER;
+ALTER TABLE trips ADD CONSTRAINT chk_trip_rating CHECK (rating BETWEEN 1 AND 5);
