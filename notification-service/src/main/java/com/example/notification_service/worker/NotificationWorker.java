@@ -9,7 +9,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -22,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 public class NotificationWorker {
 
     private final NotificationRepository repository;
+    private final PlatformTransactionManager transactionManager;
 
     @Value("${notification.worker.pool-size:4}")
     private int poolSize;
@@ -47,13 +49,19 @@ public class NotificationWorker {
 
     private void process(int workerId) {
         log.info("Worker-{} started", workerId);
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
 
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                List<NotificationTask> tasks = repository.findPendingTasksWithLock(TaskStatus.PENDING);
+                // Получаем задачи в транзакции
+                List<NotificationTask> tasks = transactionTemplate.execute(status ->
+                        repository.findPendingTasksWithLock(TaskStatus.PENDING)
+                );
 
-                for (NotificationTask task : tasks) {
-                    processTask(task, workerId);
+                if (tasks != null && !tasks.isEmpty()) {
+                    for (NotificationTask task : tasks) {
+                        processTask(task, workerId, transactionTemplate);
+                    }
                 }
 
                 Thread.sleep(pollIntervalMs);
@@ -70,39 +78,44 @@ public class NotificationWorker {
         log.info("Worker-{} stopped", workerId);
     }
 
-    @Transactional
-    protected void processTask(NotificationTask task, int workerId) {
-        log.debug("Worker-{} processing task id={}", workerId, task.getId());
+    protected void processTask(NotificationTask task, int workerId, TransactionTemplate transactionTemplate) {
+        transactionTemplate.executeWithoutResult(status -> {
+            try {
+                log.debug("Worker-{} processing task id={}", workerId, task.getId());
 
-        task.setStatus(TaskStatus.PROCESSING);
-        repository.save(task);
+                // Обновляем статус на PROCESSING
+                task.setStatus(TaskStatus.PROCESSING);
+                repository.save(task);
 
-        try {
-            sendNotification(task);
-            task.setStatus(TaskStatus.SENT);
-            log.info("✅ Worker-{} sent notification: {}", workerId, task.getMessage());
+                // Отправка уведомления
+                sendNotification(task);
 
-        } catch (Exception e) {
-            task.setAttempts(task.getAttempts() + 1);
-            log.error("❌ Worker-{} failed to send (attempt {}): {}", workerId, task.getAttempts(), e.getMessage());
+                task.setStatus(TaskStatus.SENT);
+                log.info("✅ Worker-{} sent notification: {}", workerId, task.getMessage());
 
-            if (task.getAttempts() >= maxRetryAttempts) {
-                task.setStatus(TaskStatus.FAILED);
-                log.error("💀 Task id={} marked as FAILED after {} attempts", task.getId(), maxRetryAttempts);
-            } else {
-                task.setStatus(TaskStatus.PENDING);
+            } catch (Exception e) {
+                task.setAttempts(task.getAttempts() + 1);
+                log.error("❌ Worker-{} failed to send (attempt {}): {}",
+                        workerId, task.getAttempts(), e.getMessage());
+
+                if (task.getAttempts() >= maxRetryAttempts) {
+                    task.setStatus(TaskStatus.FAILED);
+                    log.error("💀 Task id={} marked as FAILED after {} attempts",
+                            task.getId(), maxRetryAttempts);
+                } else {
+                    task.setStatus(TaskStatus.PENDING);
+                }
             }
-        }
 
-        repository.save(task);
+            repository.save(task);
+        });
     }
 
     private void sendNotification(NotificationTask task) throws InterruptedException {
-        // Имитация отправки уведомления
         log.info("📨 Sending: {}", task.getMessage());
         Thread.sleep(1000);
 
-        // Для тестирования ошибок можно раскомментировать:
+        // Для тестирования ошибок:
         // if (Math.random() < 0.3) throw new RuntimeException("Simulated failure");
     }
 

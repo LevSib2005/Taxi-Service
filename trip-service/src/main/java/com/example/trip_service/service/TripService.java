@@ -3,6 +3,7 @@ package com.example.trip_service.service;
 import com.example.trip_service.client.UserServiceClient;
 import com.example.trip_service.dto.CreateTripRequest;
 import com.example.trip_service.dto.DriverResponse;
+import com.example.trip_service.dto.TripEvent; // ← добавить DTO
 import com.example.trip_service.entity.Trip;
 import com.example.trip_service.entity.Trip.TripStatus;
 import com.example.trip_service.repository.TripRepository;
@@ -38,13 +39,8 @@ public class TripService {
                 passengerId, request.getOrigin(), request.getDestination());
 
         try {
-            log.debug("Checking passenger existence...");
             checkPassenger(passengerId);
-            log.debug("Passenger check passed");
-
-            log.debug("Fetching available driver...");
             DriverResponse driver = getAvailableDriver();
-            log.info("Driver assigned: id={}, name={}", driver.getId(), driver.getName());
 
             Trip trip = new Trip();
             trip.setPassengerId(passengerId);
@@ -55,14 +51,10 @@ public class TripService {
             trip.setPrice(calculatePrice());
 
             tripRepository.save(trip);
-
             log.info("Trip created successfully: id={}", trip.getId());
 
-            rabbitTemplate.convertAndSend(
-                    TRIP_EXCHANGE,
-                    "trip.created",
-                    trip.getId()
-            );
+            // ✅ Отправляем полный объект TripEvent
+            publishTripEvent(trip, "trip.created");
 
             rabbitTemplate.convertAndSend(
                     USER_EXCHANGE,
@@ -76,12 +68,6 @@ public class TripService {
         } catch (FeignException.NotFound e) {
             log.error("Passenger or driver not found: {}", e.getMessage());
             throw new IllegalArgumentException("Пассажир не найден или нет доступных водителей");
-        } catch (FeignException.Forbidden e) {
-            log.error("Forbidden access to user-service: {}", e.getMessage());
-            throw new IllegalStateException("Ошибка доступа к сервису пользователей");
-        } catch (FeignException e) {
-            log.error("Feign error: status={}, message={}", e.status(), e.getMessage());
-            throw new RuntimeException("Ошибка связи с сервисом пользователей", e);
         } catch (Exception e) {
             log.error("Error creating trip: {}", e.getMessage(), e);
             throw e;
@@ -112,11 +98,8 @@ public class TripService {
 
         log.debug("Trip status updated: id={}, status={}", id, newStatus);
 
-        rabbitTemplate.convertAndSend(
-                TRIP_EXCHANGE,
-                "trip.status.changed",
-                trip.getId()
-        );
+        // ✅ Отправляем полный объект TripEvent
+        publishTripEvent(trip, "trip.status.changed");
 
         if (newStatus == TripStatus.COMPLETED || newStatus == TripStatus.CANCELLED) {
             rabbitTemplate.convertAndSend(
@@ -130,6 +113,20 @@ public class TripService {
         return trip;
     }
 
+    private void publishTripEvent(Trip trip, String routingKey) {
+        TripEvent event = new TripEvent();
+        event.setTripId(trip.getId());
+        event.setPassengerId(trip.getPassengerId());
+        event.setDriverId(trip.getDriverId());
+        event.setOrigin(trip.getOrigin());
+        event.setDestination(trip.getDestination());
+        event.setPrice(trip.getPrice());
+        event.setStatus(trip.getStatus().name());
+
+        rabbitTemplate.convertAndSend(TRIP_EXCHANGE, routingKey, event);
+        log.debug("Published TripEvent: routingKey={}, tripId={}", routingKey, trip.getId());
+    }
+
     private void checkPassenger(Long passengerId) {
         try {
             userServiceClient.getPassenger(passengerId);
@@ -139,7 +136,6 @@ public class TripService {
             throw new IllegalArgumentException("Пассажир не найден: " + passengerId);
         }
     }
-
 
     private DriverResponse getAvailableDriver() {
         try {
