@@ -21,7 +21,6 @@ public class OpenApiConfig {
                 .addServersItem(new Server()
                         .url("http://localhost:8000")
                         .description("API Gateway"))
-                // ✅ Добавляем Bearer auth
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new io.swagger.v3.oas.models.Components()
                         .addSecuritySchemes("bearerAuth",

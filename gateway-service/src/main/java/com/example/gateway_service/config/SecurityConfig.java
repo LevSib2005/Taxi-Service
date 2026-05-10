@@ -20,27 +20,11 @@ public class SecurityConfig {
         http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // ✅ ОТКЛЮЧАЕМ HTTP Basic Auth
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+                .logout(ServerHttpSecurity.LogoutSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
-                        // Swagger UI и документация
-                        .pathMatchers(
-                                "/",
-                                "/index.html",
-                                "/auth/**",
-                                "/passengers",
-                                "/drivers",
-                                "/actuator/**",
-                                "/swagger-ui.html",
-                                "/swagger-ui/**",
-                                "/webjars/**",
-                                "/v3/api-docs",
-                                "/v3/api-docs/**",
-                                "/user-service/v3/api-docs/**",
-                                "/trip-service/v3/api-docs/**"
-                        ).permitAll()
-                        // Остальное требует аутентификации через JWT
-                        .anyExchange().authenticated()
+                        .anyExchange().permitAll()
                 );
         return http.build();
     }

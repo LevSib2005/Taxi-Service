@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 @Configuration
 public class SwaggerConfig {
 
-    // Список заголовков которые нужно скрыть
     private static final List<String> HIDDEN_HEADERS = List.of(
             "X-User-Id",
             "X-User-Type",
@@ -24,7 +23,6 @@ public class SwaggerConfig {
     public OperationCustomizer hideInternalHeaders() {
         return (Operation operation, HandlerMethod handlerMethod) -> {
             if (operation.getParameters() != null) {
-                // Фильтруем — убираем внутренние заголовки
                 List<Parameter> filtered = operation.getParameters()
                         .stream()
                         .filter(param -> !(

@@ -38,12 +38,10 @@ public class TripService {
                 passengerId, request.getOrigin(), request.getDestination());
 
         try {
-            // Проверяем что пассажир существует
             log.debug("Checking passenger existence...");
             checkPassenger(passengerId);
             log.debug("Passenger check passed");
 
-            // Получаем свободного водителя
             log.debug("Fetching available driver...");
             DriverResponse driver = getAvailableDriver();
             log.info("Driver assigned: id={}, name={}", driver.getId(), driver.getName());
@@ -60,21 +58,18 @@ public class TripService {
 
             log.info("Trip created successfully: id={}", trip.getId());
 
-            // Уведомляем о создании поездки
             rabbitTemplate.convertAndSend(
                     TRIP_EXCHANGE,
                     "trip.created",
                     trip.getId()
             );
 
-            // Меняем статус водителя на BUSY
             rabbitTemplate.convertAndSend(
                     USER_EXCHANGE,
                     "driver.status.update",
                     new DriverStatusEvent(driver.getId(), "BUSY")
             );
 
-            // Кэшируем водителя
             redisTemplate.opsForValue().set(DRIVER_CACHE_KEY, driver, CACHE_TTL_SECONDS, TimeUnit.SECONDS);
 
             return trip;
@@ -145,26 +140,15 @@ public class TripService {
         }
     }
 
-    private DriverResponse getAvailableDriver() {
-        // Сначала проверяем кэш
-        DriverResponse cached = (DriverResponse) redisTemplate.opsForValue().get(DRIVER_CACHE_KEY);
-        if (cached != null) {
-            log.debug("Driver found in cache: id={}", cached.getId());
-            return cached;
-        }
 
-        // Если нет в кэше — запрашиваем через Feign
+    private DriverResponse getAvailableDriver() {
         try {
             DriverResponse driver = userServiceClient.getAvailableDriver();
-            redisTemplate.opsForValue().set(DRIVER_CACHE_KEY, driver, CACHE_TTL_SECONDS, TimeUnit.SECONDS);
-            log.debug("Driver fetched from user-service: id={}", driver.getId());
+            log.debug("Driver assigned via user-service: id={}", driver.getId());
             return driver;
         } catch (FeignException.NotFound e) {
             log.error("No available drivers found");
             throw new IllegalStateException("Нет доступных водителей");
-        } catch (FeignException.ServiceUnavailable e) {
-            log.error("User service unavailable");
-            throw new IllegalStateException("Сервис пользователей недоступен");
         }
     }
 

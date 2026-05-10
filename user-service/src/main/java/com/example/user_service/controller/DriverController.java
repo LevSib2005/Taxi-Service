@@ -33,13 +33,12 @@ public class DriverController {
     private final DriverService driverService;
     private final DriverMapper mapper;
 
-    @Value("${gateway.header-key}")
-    private String headerKey;
-
+    // ✅ Читаем значения через @Value
     @Value("${gateway.header}")
     private String gatewayHeader;
 
-    // ===== Публичные эндпоинты =====
+    @Value("${gateway.header-key}")
+    private String headerKey;
 
     @Operation(summary = "Зарегистрировать водителя")
     @PostMapping
@@ -57,30 +56,6 @@ public class DriverController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-
-    // ===== Внутренний эндпоинт для trip-service =====
-
-    @Operation(summary = "Получить свободного водителя (внутренний эндпоинт для trip-service)")
-    @GetMapping("/available")
-    public ResponseEntity<DriverResponse> getAvailable(
-            @RequestHeader(value = "${gateway.header}", required = false) String incomingHeaderValue) {
-
-        // Проверяем что запрос пришёл от доверенного сервиса через gateway
-        if (!headerKey.equals(incomingHeaderValue)) {
-            log.warn("Unauthorized access attempt to /drivers/available");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        try {
-            Driver driver = driverService.getAvailableDriver();
-            return ResponseEntity.ok(mapper.toResponse(driver));
-        } catch (IllegalStateException e) {
-            log.warn("No available drivers found");
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
-        }
-    }
-
-    // ===== Защищённые эндпоинты =====
 
     @Operation(
             summary = "Получить профиль водителя по ID",
@@ -129,5 +104,11 @@ public class DriverController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @GetMapping("/available")
+    public ResponseEntity<DriverResponse> getAvailableDriver() {
+        Driver driver = driverService.assignDriver();
+        return ResponseEntity.ok(mapper.toResponse(driver));
     }
 }

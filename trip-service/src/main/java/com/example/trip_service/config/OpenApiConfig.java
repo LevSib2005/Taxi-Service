@@ -31,11 +31,9 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .servers(List.of(
-                        // ✅ Gateway - ПЕРВЫЙ в списке (по умолчанию)
                         new Server()
                                 .url("http://localhost:8000")
                                 .description("API Gateway (использовать этот!)"),
-                        // Прямой доступ только для отладки
                         new Server()
                                 .url("http://localhost:8082")
                                 .description("Trip Service (прямой доступ - без заголовков!)")

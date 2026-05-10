@@ -48,7 +48,7 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt-api:${property("jjwtVersion")}")
     implementation("io.jsonwebtoken:jjwt-impl:${property("jjwtVersion")}")
     implementation("io.jsonwebtoken:jjwt-jackson:${property("jjwtVersion")}")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
 }
 
 dependencyManagement {

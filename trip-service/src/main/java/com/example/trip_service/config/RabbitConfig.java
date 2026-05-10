@@ -38,7 +38,6 @@ public class RabbitConfig {
                 .with("trip.*");
     }
 
-    // Сериализация в JSON
     @Bean
     public Jackson2JsonMessageConverter messageConverter() {
         return new Jackson2JsonMessageConverter();

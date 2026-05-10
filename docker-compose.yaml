@@ -24,13 +24,13 @@ services:
     container_name: pgadmin
     ports:
       - "5050:80"
-    environment:                    # ← был лишний пробел в начале
+    environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
       PGADMIN_CONFIG_SERVER_MODE: 'False'
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
-    volumes:                        # ← тоже исправлен отступ
-      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json   # ← добавлен дефис
+    volumes:
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json
     depends_on:
       - postgres
 

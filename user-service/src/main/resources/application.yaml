@@ -16,6 +16,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+    open-in-view: false
 
   flyway:
     enabled: true
@@ -39,39 +40,8 @@ spring:
     username: guest
     password: guest
 
-  security:
-    user:
-      name: user
-      password: password
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: http://localhost:8080/auth/jwks
-
-  cloud:
-    gateway:
-      enabled: false
-      routes:
-        - id: example_route
-          uri: http://example.com
-          predicates:
-            - Path=/example/**
-    openfeign:
-      client:
-        config:
-          default:
-            connectTimeout: 5000
-            readTimeout: 5000
-            loggerLevel: basic
-
-  management:
-    endpoints:
-      web:
-        exposure:
-          include: health, info, metrics, prometheus
-    endpoint:
-      health:
-        show-details: always
+server:
+  port: 8080
 
 springdoc:
   api-docs:
@@ -89,8 +59,14 @@ gateway:
   header-key: ${HEADER_KEY:dev-secret-key-for-microservices}
   access-token-ttl: 900000
 
-server:
-  port: 8080
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: always
 
 logging:
   level:

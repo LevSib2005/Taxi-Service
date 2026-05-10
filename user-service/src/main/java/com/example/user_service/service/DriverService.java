@@ -4,6 +4,7 @@ import com.example.user_service.dto.DriverRequest;
 import com.example.user_service.dto.TokenResponse;
 import com.example.user_service.entity.Driver;
 import com.example.user_service.entity.RefreshToken.UserType;
+import com.example.user_service.exception.NoAvailableDriversException;
 import com.example.user_service.repository.DriverRepository;
 import com.example.user_service.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -67,5 +68,14 @@ public class DriverService {
     public Driver getAvailableDriver() {
         return driverRepository.findFirstByStatus(Driver.DriverStatus.FREE)
                 .orElseThrow(() -> new IllegalStateException("Нет доступных водителей"));
+    }
+
+    @Transactional
+    public Driver assignDriver() {
+        Driver driver = driverRepository.findFirstFreeAndLock()
+                .orElseThrow(NoAvailableDriversException::new);
+
+        driver.setStatus(Driver.DriverStatus.BUSY);
+        return driverRepository.save(driver);
     }
 }

@@ -80,16 +80,16 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         if (path.equals("/passengers") || path.equals("/drivers")) {
             return true;
         }
-
         if (path.startsWith("/auth/")) {
             return true;
         }
-
+        if (path.contains("/api-docs") || path.startsWith("/swagger-ui") || path.startsWith("/webjars")) {
+            return true;
+        }
         if (properties.getOpenRoutes() != null) {
             return properties.getOpenRoutes().stream()
                     .anyMatch(path::startsWith);
         }
-
         return false;
     }
 
